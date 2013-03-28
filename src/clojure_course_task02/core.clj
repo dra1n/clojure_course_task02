@@ -2,32 +2,22 @@
   (:import java.io.File)
   (:gen-class))
 
-(def results (agent #{}))
-
-(defn zip [& coll]
-  (apply map vector coll))
+(def results (ref #{}))
 
 (defn check-name [name pat]
   (if-let [match (re-matches (re-pattern pat) name)]
-    (send results conj match)))
+    (dosync (alter results conj match))))
 
 (defn make-search! [file-name d]
-  (if (.isDirectory d)
-    (let [files (.listFiles d)
-          agents (doall (map #(agent %) files))
-          jobs (zip agents files)]
-      (doseq [job jobs] (send (first jobs) (last jobs))))))
-
-(comment(defn make-search! [file-name d]
-  (pmap (fn [f]
+  (doall (pmap (fn [f]
     (if (.isDirectory f)
       (make-search! file-name f)
       (check-name (.getName f) file-name)))
     (.listFiles d))))
 
 (defn find-files [file-name path]
-  (make-search! file-name (File. path)))
-  
+  (make-search! file-name (File. path))
+  @results)
 
 (defn usage []
   (println "Usage: $ run.sh file_name path"))
