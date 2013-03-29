@@ -2,22 +2,15 @@
   (:import java.io.File)
   (:gen-class))
 
-(def results (ref #{}))
-
-(defn check-name [name pat]
-  (if-let [match (re-matches (re-pattern pat) name)]
-    (dosync (alter results conj match))))
-
-(defn make-search! [file-name d]
-  (doall (pmap (fn [f]
-    (if (.isDirectory f)
-      (make-search! file-name f)
-      (check-name (.getName f) file-name)))
-    (.listFiles d))))
+(defn files [d]
+  (pmap #(if (.isDirectory %) (files %) (.getName %))
+    (.listFiles d)))
 
 (defn find-files [file-name path]
-  (make-search! file-name (File. path))
-  @results)
+  (->>
+   (files (File. path))
+   (flatten)
+   (filter #(re-matches (re-pattern file-name) %))))
 
 (defn usage []
   (println "Usage: $ run.sh file_name path"))
