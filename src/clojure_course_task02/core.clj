@@ -1,5 +1,5 @@
 (ns clojure-course-task02.core
-  (:import java.io.File)
+  (:require [clojure.java.io :as io])
   (:gen-class))
 
 (defn files [d]
@@ -8,7 +8,7 @@
 
 (defn find-files [file-name path]
   (->>
-   (files (File. path))
+   (files (io/file path))
    (flatten)
    (filter #(re-matches (re-pattern file-name) %))))
 
